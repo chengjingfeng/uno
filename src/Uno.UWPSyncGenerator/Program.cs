@@ -40,7 +40,11 @@ namespace Uno.UWPSyncGenerator
 
 			if (mode == DocMode || mode == AllMode)
 			{
-				new DocGenerator().Build(@"..\..\..\..\Uno.UI", "Uno.UI", "Windows.Foundation.UniversalApiContract");
+				var docGenerator = new DocGenerator();
+				docGenerator.Initialize();
+				docGenerator.Build(@"..\..\..\..\Uno.UI", "Uno.UI", "Windows.Foundation.UniversalApiContract");
+				docGenerator.PostProcess();
+				docGenerator.Write();
 			}
 		}
 	}
