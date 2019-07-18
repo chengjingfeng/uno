@@ -59,6 +59,7 @@
   value on data bound properties before setting the new value.
 * [Android] `.Click` on a `ButtonBase` were not raising events properly
 * TemplateReuse not called when dataContext is set
+* [iOS]Fixed DatePickerFlyout & TimePickerFlyout not being placed at the bottom
 
 ## Release 1.45.0
 ### Features
