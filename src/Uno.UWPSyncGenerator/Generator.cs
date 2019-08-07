@@ -117,7 +117,8 @@ namespace Uno.UWPSyncGenerator
 
 			Environment.SetEnvironmentVariable("VSINSTALLDIR", installPath);
 
-			MSBuildBasePath = Path.Combine(installPath, "MSBuild\\15.0\\Bin");
+			//MSBuildBasePath = Path.Combine(installPath, "MSBuild\\15.0\\Bin");
+			MSBuildBasePath = Path.Combine(installPath, "MSBuild\\Current\\Bin");
 		}
 
 		protected string GetNamespaceBasePath(INamedTypeSymbol type)

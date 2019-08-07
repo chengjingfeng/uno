@@ -13,7 +13,7 @@ namespace Uno.UWPSyncGenerator
 	/// <summary>
 	/// Generates documentation about what parts of the UWP contract are currently implemented by Uno.
 	/// </summary>
-	class DocGenerator : Generator
+	partial class DocGenerator : Generator
 	{
 		private const string DocPath = @"..\..\..\..\..\doc\articles";
 		private const string ImplementedViewsFileName = "implemented-views.md";
@@ -25,6 +25,7 @@ namespace Uno.UWPSyncGenerator
 		private List<PlatformSymbols<INamedTypeSymbol>> _nonViews;
 		private IGrouping<INamespaceSymbol, PlatformSymbols<INamedTypeSymbol>>[] _viewsGrouped;
 		private IGrouping<INamespaceSymbol, PlatformSymbols<INamedTypeSymbol>>[] _nonViewsGrouped;
+		private IEnumerable<IGrouping<INamespaceSymbol, PlatformSymbols<INamedTypeSymbol>>> AllGrouped => _viewsGrouped.Concat(_nonViewsGrouped);
 		private HashSet<(string name, string namespaceString)> _kosherFrameworkViews;
 
 		public void Initialize()
@@ -200,7 +201,7 @@ namespace Uno.UWPSyncGenerator
 
 			var tocSB = new StringBuilder();
 
-			foreach (var group in _viewsGrouped.Concat(_nonViewsGrouped))
+			foreach (var group in AllGrouped)
 			{
 				if (group.All(ps => ps.ImplementedForMain == ImplementedFor.None))
 				{
@@ -233,16 +234,9 @@ namespace Uno.UWPSyncGenerator
 
 						AppendOpenAnIssue();
 
-						var properties = view.UAPSymbol.GetMembers().OfType<IPropertySymbol>().Select(p => GetAllMatchingPropertyMember(view, p)).ToArray();
-						var methods = view.UAPSymbol
-							.GetMembers()
-							.OfType<IMethodSymbol>()
-							.Where(m => m.MethodKind == MethodKind.Ordinary &&
-								!(m.Name.StartsWith("add_") || m.Name.StartsWith("remove_")) // Filter out explicit event add/remove methods (associated with routed events). These should already be filtered out by the MethodKind.Ordinary check but for some reason, on the build server only, aren't.
-							)
-							.Select(m => GetAllMatchingMethods(view, m))
-							.ToArray();
-						var events = view.UAPSymbol.GetMembers().OfType<IEventSymbol>().Select(e => GetAllMatchingEvents(view, e)).ToArray();
+						var properties = GetProperties(view);
+						var methods = GetMethods(view);
+						var events = GetEvents(view);
 
 						AppendImplementedMembers("properties", "Property", properties);
 						AppendImplementedMembers("methods", "Method", methods);
@@ -320,6 +314,28 @@ namespace Uno.UWPSyncGenerator
 			{
 				fileWriter.Write(tocSB.ToString());
 			}
+		}
+
+		private PlatformSymbols<ISymbol>[] GetEvents(PlatformSymbols<INamedTypeSymbol> view)
+		{
+			return view.UAPSymbol.GetMembers().OfType<IEventSymbol>().Select(e => GetAllMatchingEvents(view, e)).ToArray();
+		}
+
+		private PlatformSymbols<IMethodSymbol>[] GetMethods(PlatformSymbols<INamedTypeSymbol> view)
+		{
+			return view.UAPSymbol
+										.GetMembers()
+										.OfType<IMethodSymbol>()
+										.Where(m => m.MethodKind == MethodKind.Ordinary &&
+											!(m.Name.StartsWith("add_") || m.Name.StartsWith("remove_")) // Filter out explicit event add/remove methods (associated with routed events). These should already be filtered out by the MethodKind.Ordinary check but for some reason, on the build server only, aren't.
+										)
+										.Select(m => GetAllMatchingMethods(view, m))
+										.ToArray();
+		}
+
+		private PlatformSymbols<IPropertySymbol>[] GetProperties(PlatformSymbols<INamedTypeSymbol> view)
+		{
+			return view.UAPSymbol.GetMembers().OfType<IPropertySymbol>().Select(p => GetAllMatchingPropertyMember(view, p)).ToArray();
 		}
 
 		protected override void ProcessType(INamedTypeSymbol type, INamespaceSymbol ns)
